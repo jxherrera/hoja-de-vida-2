@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useFetch } from '../hooks/useFetch';
 
 function FormularioPost() {
   const navigate = useNavigate();
@@ -13,8 +14,6 @@ function FormularioPost() {
   });
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
-  // Nuevo estado para mostrar mensaje de éxito al "Continuar Editando"
-  const [mensajeExito, setMensajeExito] = useState(null);
 
   // Cargar datos del post si estamos editando
   useEffect(() => {
@@ -47,19 +46,13 @@ function FormularioPost() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Modificado: Ahora recibe el evento (e) y un booleano (redirigir)
-  const manejarEnvio = async (e, redirigir = true) => {
+  const manejarEnvio = async (e) => {
     e.preventDefault();
     
-    // Limpiamos mensajes previos
-    setError(null);
-    setMensajeExito(null);
-    
-    // Corrección pequeña en la URL para creación
     const url = isEditing 
       ? `/api/posts/${id}` 
-      : '/api/posts'; 
-      
+      : '/api/posts';
+    // const url = `/api/posts${isEditing ? `/${id}` : ''}`;
     const method = isEditing ? 'PUT' : 'POST';
 
     try {
@@ -79,17 +72,8 @@ function FormularioPost() {
       const datos = await respuesta.json();
       console.log(`Post ${isEditing ? 'actualizado' : 'creado'}:`, datos);
       
-      // LÓGICA DE REDIRECCIÓN CONDICIONAL
-      if (redirigir) {
-        // Opción: Actualizar y Regresar
-        navigate('/');
-      } else {
-        // Opción: Actualizar y Continuar Editando
-        setMensajeExito("¡Cambios guardados correctamente!");
-        // Ocultar el mensaje después de 3 segundos (opcional)
-        setTimeout(() => setMensajeExito(null), 3000);
-      }
-
+      // Redirigir a la lista de posts
+      navigate('/');
     } catch (error) {
       console.error('Error:', error);
       setError(error.message);
@@ -98,7 +82,9 @@ function FormularioPost() {
     }
   };
 
-  if (cargando && isEditing && !formData.title) {
+  const {data: usuarios, cargando: cargandoUsuarios, error: errorUsuarios} = useFetch('/api/users');
+
+  if (cargando && isEditing) {
     return (
       <div className="cargando">
         <div className="spinner"></div>
@@ -111,22 +97,13 @@ function FormularioPost() {
     <div className="formulario-container">
       <h2>{isEditing ? 'Editar Post' : 'Crear Nuevo Post'}</h2>
       
-      {/* Mensaje de Error */}
       {error && (
-        <div className="error" style={{ color: 'red', marginBottom: '10px' }}>
+        <div className="error">
           <p>❌ {error}</p>
         </div>
       )}
 
-      {/* Nuevo Mensaje de Éxito (Verde) */}
-      {mensajeExito && (
-        <div className="exito" style={{ backgroundColor: '#d4edda', color: '#155724', padding: '10px', borderRadius: '5px', marginBottom: '15px' }}>
-          <p>✅ {mensajeExito}</p>
-        </div>
-      )}
-
-      {/* Quitamos onSubmit del form para manejarlo en los botones */}
-      <form className="formulario-post">
+      <form onSubmit={manejarEnvio} className="formulario-post">
         <div className="form-group">
           <label htmlFor="title">Título:</label>
           <input
@@ -154,8 +131,8 @@ function FormularioPost() {
         </div>
         
         <div className="form-group">
-          <label htmlFor="userId">Usuario ID:</label>
-          <input
+          <label htmlFor="userId">Usuario:</label>
+          {/* <input
             type="number"
             id="userId"
             name="userId"
@@ -164,42 +141,38 @@ function FormularioPost() {
             className="form-input"
             min="1"
             required
-          />
+          /> */}
+          {cargandoUsuarios ? (
+            <p>Cargando usuarios...</p>
+          ) : errorUsuarios ? (
+            <p>Error al cargar usuarios: {errorUsuarios}</p>
+          ) : (
+            <select
+              id="userId"
+              name="userId"
+              value={formData.userId}
+              onChange={handleChange}
+              className="form-select"
+              required
+            >
+              <option value="">Seleccione un usuario</option>
+              {usuarios && usuarios.map(usuario => (
+                <option key={usuario.id} value={usuario.id}>
+                  {usuario.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         
-        <div className="form-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          
-          {isEditing ? (
-            /* LÓGICA PARA MODO EDICIÓN: DOS BOTONES */
-            <>
-              <button 
-                onClick={(e) => manejarEnvio(e, false)} // false = No redirigir
-                className="btn-primary"
-                disabled={cargando}
-                style={{ backgroundColor: '#17a2b8' }} // Un color diferente (info/azul claro)
-              >
-                {cargando ? 'Guardando...' : 'Actualizar y Continuar Editando'}
-              </button>
-
-              <button 
-                onClick={(e) => manejarEnvio(e, true)} // true = Redirigir
-                className="btn-primary"
-                disabled={cargando}
-              >
-                {cargando ? 'Guardando...' : 'Actualizar y Regresar a Listado'}
-              </button>
-            </>
-          ) : (
-            /* LÓGICA PARA CREAR (Se mantiene igual) */
-            <button 
-              onClick={(e) => manejarEnvio(e, true)}
-              className="btn-primary"
-              disabled={cargando}
-            >
-              {cargando ? 'Guardando...' : 'Crear'}
-            </button>
-          )}
-
+        <div className="form-actions">
+          <button 
+            type="submit" 
+            className="btn-primary"
+            disabled={cargando}
+          >
+            {cargando ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
+          </button>
           <button
             type="button"
             onClick={() => navigate(-1)}

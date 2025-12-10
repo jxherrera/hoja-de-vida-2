@@ -13,7 +13,7 @@
       "body": "est rerum tempore vitae\nsequi sint nihil reprehenderit dolor beatae ea dolores neque\nfugiat blanditiis voluptate porro vel nihil molestiae ut reiciendis\nqui aperiam non debitis possimus qui neque nisi nulla"
     },
     {
-      "userId": 1,
+      "userId": 2,
       "id": "3",
       "title": "ea molestias quasi exercitationem repellat qui ipsa sit aut",
       "body": "et iusto sed quo iure\nvoluptatem occaecati omnis eligendi aut ad\nvoluptatem doloribus vel accusantium quis pariatur\nmolestiae porro eius odio et labore et velit aut"
@@ -22,13 +22,19 @@
       "id": "9e91",
       "title": "dsadsa",
       "body": "dsadsadsa",
-      "userId": 1
+      "userId": 2
     },
     {
       "title": "Contenido de Prueba editado",
       "body": "Contenido de prueba a ser editado con el siguiente cambio:\n<br />\n- Item 1\n- Item 2",
-      "userId": 1,
+      "userId": 3,
       "id": "935a"
+    },
+    {
+      "title": "Titulo Editado",
+      "body": "Contenido de prueba editado con cambio de usuario",
+      "userId": "2",
+      "id": "9422"
     }
   ],
   "users": [

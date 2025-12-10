@@ -1,16 +1,21 @@
-# React + Vite
+# 💡 Reflexión sobre la Implementación
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Mejora en `useFetch` y Manejo de Formularios
 
-Currently, two official plugins are available:
+Lo que entendí y lo que se podría hacer para mejorar la implementación es lo siguiente:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 1. ¿Cómo mejorarías la implementación de `useFetch`?
 
-## React Compiler
+Lo que entendí fue que el useFetch es como nuestro repartidor de datos. Lo que se podría hacer para mejorarlo es:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Darle un botón de "Re-intentar": Ahora solo trae los datos una vez. Si la información cambia en el servidor (o si queremos actualizarla), deberíamos darle al usuario la capacidad de volver a pedir los datos sin recargar toda la pantalla.
 
-## Expanding the ESLint configuration
+Hacerlo más comunicativo: No solo que diga "Cargando" o "Error", sino que sea más específico. Por ejemplo, que pueda decir: "Datos traídos con éxito", "No se encontró el recurso (Error 404)", o "Se me acabó el tiempo esperando".
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 2. Formulario de Edición/Creación de Post: ¿Cómo actualizar los datos de envío sin manejarlos individualmente?
+
+Lo que se podría hacer para manejar todos los campos de un formulario (título, contenido, categoría, etc.) de forma eficiente es:
+
+En lugar de tratar cada campo como una persona individual que tenemos que llamar y actualizar por separado, los tratamos a todos como una sola familia que vive en la misma casa:
+
+Guardar todo en un único "Paquete de Datos": Creamos una variable de estado que es un solo objeto. Este objeto contiene el Título, el Contenido, y todo lo demás. Es el estado completo del post.

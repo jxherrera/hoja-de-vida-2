@@ -1,35 +1,58 @@
 import { useState, useEffect } from 'react';
-import { Link } from "react-router";
+import { Link } from "react-router-dom"; // Asegúrate que sea react-router-dom
 
 function ListaPosts() {
   const [pagina, setPagina] = useState(1);
   const [posts, setPosts] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
+  
+  // NUEVO: Estados para el filtro
+  const [usuarios, setUsuarios] = useState([]);
+  const [filtroUsuario, setFiltroUsuario] = useState(''); // Guarda el ID del usuario seleccionado
+
   const limite = 4;
 
+  // 1. Efecto para cargar la lista de usuarios (para el filtro)
+  useEffect(() => {
+    const cargarUsuarios = async () => {
+      try {
+        const res = await fetch('/api/users');
+        const data = await res.json();
+        setUsuarios(data);
+      } catch (error) {
+        console.error("Error cargando usuarios para filtro", error);
+      }
+    };
+    cargarUsuarios();
+  }, []);
+
+  // 2. Efecto principal para cargar posts (modificado con el filtro)
   useEffect(() => {
     const cargarPosts = async () => {
       try {
         setCargando(true);
         setError(null);
-        const url = `/api/posts?_page=${pagina}&_per_page=${limite}`;
-        console.log('Página:', pagina);
-        console.log('URL completa:', url);
-        const respuesta = await fetch(url);
-        console.log('Respuesta recibida, status:', respuesta.status);
-        if (!respuesta.ok) {
-          throw new Error(`Error al cargar posts: ${respuesta.status}`);
+        
+        // Construimos la URL base
+        let url = `/api/posts?_page=${pagina}&_per_page=${limite}`;
+        
+        // Si hay un usuario seleccionado, lo agregamos a la URL
+        if (filtroUsuario) {
+          url += `&userId=${filtroUsuario}`;
         }
+
+        console.log('Fetching:', url);
+        const respuesta = await fetch(url);
+        
+        if (!respuesta.ok) throw new Error(`Error: ${respuesta.status}`);
+        
         const datos = await respuesta.json();
-        console.log('Datos recibidos:', datos);
-        // Con _per_page, json-server devuelve { data: [...], first: ..., last: ..., next: ..., prev: ... }
-        const posts = Array.isArray(datos) ? datos : (datos.data || []);
-        console.log('Cantidad de posts:', posts.length);
-        console.log('IDs de posts:', posts.map(p => p.id));
-        setPosts(posts);
+        // Soporte para json-server paginado o directo
+        const listaPosts = Array.isArray(datos) ? datos : (datos.data || []);
+        
+        setPosts(listaPosts);
       } catch (err) {
-        console.error('Error en fetch:', err);
         setError(err.message);
         setPosts([]);
       } finally {
@@ -38,72 +61,68 @@ function ListaPosts() {
     };
 
     cargarPosts();
-  }, [pagina, limite]);
+  }, [pagina, limite, filtroUsuario]); // Se ejecuta si cambia la página o el filtro
 
-  if (cargando) {
-    return (
-      <div className="cargando">
-        <div className="spinner"></div>
-        <p>Cargando posts...</p>
-      </div>
-    );
-  }
+  // Función para manejar el cambio de filtro
+  const handleFiltroChange = (e) => {
+    setFiltroUsuario(e.target.value);
+    setPagina(1); // Importante: Reiniciar a página 1 al filtrar
+  };
 
-  if (error) {
-    return (
-      <div className="error">
-        <h2>❌ Error</h2>
-        <p>{error}</p>
-      </div>
-    );
-  }
+  if (error) return <div className="error"><h2>❌ Error</h2><p>{error}</p></div>;
 
   return (
-    <div>
-      <h2>📝 Lista de Posts</h2>
-      <div className="posts-grid">
-        {posts.map(post => (
-          <div key={post.id} className="post-card">
-            {/* PASO 5: Agregar Link de React Router para navegar al detalle */}
-            <Link to={`/posts/${post.id}`} className="post-link">Ver Detalle</Link>
-            <h3>{post.title}</h3>
-            <p>{post.body.substring(0, 100)}...</p>
+    <div className="lista-posts-container">
+      <div className="header-lista">
+        <h2>📝 Lista de Posts</h2>
+        
+        {/* NUEVO: Select para filtrar */}
+        <div className="filtro-container">
+          <label>Filtrar por autor: </label>
+          <select value={filtroUsuario} onChange={handleFiltroChange} className="input-filtro">
+            <option value="">Todos los usuarios</option>
+            {usuarios.map(u => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {cargando ? (
+        <div className="cargando"><div className="spinner"></div><p>Cargando...</p></div>
+      ) : (
+        <>
+          <div className="posts-grid">
+            {posts.map(post => (
+              <div key={post.id} className="post-card">
+                <h3>{post.title}</h3>
+                <p>{post.body.substring(0, 100)}...</p>
+                <Link to={`/posts/${post.id}`} className="btn-ver">Leer más →</Link>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      
-      {/* Controles de paginación */}
-      <div className="paginacion">
-        <button 
-          onClick={() => {
-            console.log('Click en Anterior, página actual:', pagina);
-            setPagina(p => {
-              const nueva = Math.max(1, p - 1);
-              console.log('Nueva página:', nueva);
-              return nueva;
-            });
-          }}
-          disabled={pagina === 1}
-          className="btn-paginacion"
-        >
-          ← Anterior
-        </button>
-        <span className="pagina-actual">Página {pagina}</span>
-        <button 
-          onClick={() => {
-            console.log('Click en Siguiente, página actual:', pagina);
-            setPagina(p => {
-              const nueva = p + 1;
-              console.log('Nueva página:', nueva);
-              return nueva;
-            });
-          }}
-          disabled={posts.length < limite}
-          className="btn-paginacion"
-        >
-          Siguiente →
-        </button>
-      </div>
+          
+          {posts.length === 0 && <p className="no-results">No hay posts para este usuario.</p>}
+
+          <div className="paginacion">
+            <button 
+              onClick={() => setPagina(p => Math.max(1, p - 1))}
+              disabled={pagina === 1}
+              className="btn-paginacion"
+            >
+              ← Anterior
+            </button>
+            <span className="pagina-actual">Página {pagina}</span>
+            <button 
+              onClick={() => setPagina(p => p + 1)}
+              disabled={posts.length < limite} // Deshabilitar si hay menos items del limite
+              className="btn-paginacion"
+            >
+              Siguiente →
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
